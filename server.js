@@ -8,8 +8,9 @@ const MongoStore = require('connect-mongo');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// MongoDB Connection
+// MongoDB Connection with Error Catching
 const MONGO_URI = 'mongodb://varunnietcollab_db_user:Uq7g0qB6yQfQ112h@cluster0-shard-00-00.z19tq.mongodb.net:27017,cluster0-shard-00-01.z19tq.mongodb.net:27017,cluster0-shard-00-02.z19tq.mongodb.net:27017/?ssl=true&replicaSet=atlas-z19tq-shard-0&authSource=admin&retryWrites=true&w=majority';
+
 mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB Connected Successfully'))
   .catch(err => console.error('MongoDB Connection Error:', err));
@@ -24,17 +25,13 @@ const User = mongoose.model('User', userSchema);
 // Data/Planner Schema (Linked with userId)
 const itemSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  title: String,
-  description: String,
-  date: String,
-  status: String,
-  createdAt: { type: Date, default: Date.now }
+  tasks: Array
 });
 const Item = mongoose.model('Item', itemSchema);
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Session Setup
@@ -43,7 +40,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: MONGO_URI }),
-  cookie: { maxAge: 1000 * 60 * 60 * 24 } // 1 day session
+  cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }));
 
 // Authentication Middleware
@@ -70,6 +67,7 @@ app.post('/api/signup', async (req, res) => {
     await newUser.save();
     res.status(201).json({ message: 'Signup successful! Please log in.' });
   } catch (err) {
+    console.error('Signup Error:', err);
     res.status(500).json({ error: 'Server error during signup.' });
   }
 });
@@ -86,6 +84,7 @@ app.post('/api/login', async (req, res) => {
     req.session.username = user.username;
     res.json({ message: 'Login successful', username: user.username });
   } catch (err) {
+    console.error('Login Error:', err);
     res.status(500).json({ error: 'Server error during login.' });
   }
 });
@@ -108,42 +107,34 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
-// Routes: Get Items (Only for logged-in user)
-app.get('/api/items', isAuthenticated, async (req, res) => {
+// Routes: Get Tasks
+app.get('/api/tasks', isAuthenticated, async (req, res) => {
   try {
-    const items = await Item.find({ userId: req.session.userId });
-    res.json(items);
+    let userData = await Item.findOne({ userId: req.session.userId });
+    if (!userData) {
+      userData = new Item({ userId: req.session.userId, tasks: [] });
+      await userData.save();
+    }
+    res.json(userData.tasks);
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching items.' });
+    console.error('Get Tasks Error:', err);
+    res.status(500).json({ error: 'Error fetching tasks.' });
   }
 });
 
-// Routes: Add Item (Saved with current user's ID)
-app.post('/api/items', isAuthenticated, async (req, res) => {
+// Routes: Save Tasks
+app.post('/api/tasks', isAuthenticated, async (req, res) => {
   try {
-    const { title, description, date, status } = req.body;
-    const newItem = new Item({
-      userId: req.session.userId,
-      title,
-      description,
-      date,
-      status
-    });
-    await newItem.save();
-    res.status(201).json(newItem);
+    const tasks = req.body;
+    await Item.findOneAndUpdate(
+      { userId: req.session.userId },
+      { tasks: tasks },
+      { upsert: true, new: true }
+    );
+    res.json({ message: 'Tasks saved successfully.' });
   } catch (err) {
-    res.status(500).json({ error: 'Error saving item.' });
-  }
-});
-
-// Routes: Delete Item
-app.delete('/api/items/:id', isAuthenticated, async (req, res) => {
-  try {
-    const deleted = await Item.findOneAndDelete({ _id: req.params.id, userId: req.session.userId });
-    if (!deleted) return res.status(404).json({ error: 'Item not found or unauthorized.' });
-    res.json({ message: 'Item deleted successfully.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Error deleting item.' });
+    console.error('Save Tasks Error:', err);
+    res.status(500).json({ error: 'Error saving tasks.' });
   }
 });
 
