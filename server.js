@@ -9,8 +9,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // MongoDB Connection with Error Catching
-const MONGO_URI = 'mongodb://varunnietcollab_db_user:Uq7g0qB6yQfQ112h@cluster0-shard-00-00.z19tq.mongodb.net:27017,cluster0-shard-00-01.z19tq.mongodb.net:27017,cluster0-shard-00-02.z19tq.mongodb.net:27017/?ssl=true&replicaSet=atlas-z19tq-shard-0&authSource=admin&retryWrites=true&w=majority';
-
+const MONGO_URI = 'mongodb+srv://varunnietcollab_db_user:Uq7g0qB6yQfQ112h@cluster0.z19tq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB Connected Successfully'))
   .catch(err => console.error('MongoDB Connection Error:', err));
