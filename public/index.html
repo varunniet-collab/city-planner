@@ -39,11 +39,12 @@
     header p { margin: 4px 0 0 0; font-size: 12px; opacity: 0.9; }
     
     .container { max-width: 1350px; margin: 15px auto; padding: 0 15px; }
-    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .btn { padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
     .btn-notif { background: var(--warning); color: #000; }
     .btn-export { background: #059669; color: white; }
     .btn-alerts { background: #e11d48; color: white; }
+    .btn-logout { background: #dc2626; color: white; }
     .btn-primary { background: var(--secondary); color: white; width: 100%; padding: 12px; font-size: 14px; margin-top: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: background 0.3s; }
     .btn-primary.edit-mode { background: #6366f1; } 
     
@@ -91,7 +92,6 @@
     .badge-once { background: #f1f5f9; color: #475569; }
     .badge-alert { background: #fee2e2; color: var(--danger); display: inline-block; margin-top: 4px; }
     
-    /* NEW: Priority Badges */
     .badge-High { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
     .badge-Medium { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
     .badge-Low { background: #dcfce3; color: #16a34a; border: 1px solid #86efac; }
@@ -105,7 +105,7 @@
     .btn-update { background: #0284c7; } 
     .btn-edit { background: #6366f1; } 
     .btn-snooze { background: #f59e0b; color: black; } 
-    .btn-done { background: #16a34a; } 
+    .btn-done { background: #16a34a; }
     .btn-del { background: #ef4444; }
 
     .filter-select { padding: 5px 8px; border-radius: 5px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 12px; color: #1e3a8a; cursor: pointer; }
@@ -119,149 +119,174 @@
     .modal { background: white; width: 90%; max-width: 550px; padding: 24px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); max-height: 85vh; overflow-y: auto;}
     .batch-item { border-bottom: 1px solid #e2e8f0; padding: 10px 0; }
     .batch-item:last-child { border-bottom: none; }
+    .hidden { display: none !important; }
+    
+    /* Login Box Styling */
+    .auth-container { max-width: 450px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 6px solid var(--primary); }
+    .auth-container h2 { text-align: center; color: var(--primary); border: none; margin-bottom: 20px; }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="header-left">
-    <button class="toggle-btn" onclick="toggleSidebar()" title="Toggle Sidebar">☰</button>
-    <div>
-      <h1>BMC Officer Smart Executive Planner</h1>
-      <p>Multi-stage batched alert system & Analytics Dashboard</p>
+<!-- AUTH SECTION (Login / Signup) -->
+<div id="authSection" class="auth-container">
+  <h2 id="authTitle">BMC Planner Login</h2>
+  <div id="authMsg" style="margin-bottom: 10px; text-align: center;"></div>
+  <form id="authForm" onsubmit="handleAuthSubmit(event)">
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="authUsername" required placeholder="Enter your username">
     </div>
-  </div>
-  <div class="header-actions">
-    <button class="btn btn-alerts" onclick="showManualPendingAlerts()">🚨 View Alerts</button>
-    <button class="btn btn-notif" onclick="initNotifications()">🔔 Turn on Alerts</button>
-    <button class="btn btn-export" onclick="exportToCSV()">📥 Excel Export</button>
-  </div>
-</header>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="authPassword" required placeholder="Enter your password">
+    </div>
+    <button type="submit" id="authSubmitBtn" class="btn-primary">Login</button>
+    <button type="button" class="btn" style="width: 100%; margin-top: 8px; background: #e2e8f0; color: #0f172a;" id="toggleAuthMode" onclick="toggleAuthMode()">Need an account? Sign Up</button>
+  </form>
+</div>
 
-<div class="container">
-  <div class="layout" id="mainLayout">
-    
-    <div class="card" id="sidebarForm">
-      <h2 id="formTitle">+ Add New Tasks & Reminders</h2>
-      <form id="taskForm" onsubmit="handleFormSubmit(event)">
-        
-        <div class="form-group">
-          <label>Task / Scheme Title</label>
-          <input type="text" id="title" required placeholder="E.g.: STP SCADA Maintenance">
-        </div>
-        
-        <div class="form-group">
-          <label>Department (Hold Ctrl to select multiple)</label>
-          <select id="dept" multiple required>
-            <option value="All Departments">All Departments (सभी विभाग)</option>
-            <option value="Solid Waste Mgmt (SWM)">Solid Waste Mgmt (SWM)</option>
-            <option value="Water Works (HE)">Water Works (HE)</option>
-            <option value="Drainage / STP">Drainage / STP SCADA</option>
-            <option value="Roads & Projects">Roads & Projects</option>
-            <option value="Health / Sanitation">Health / Sanitation</option>
-            <option value="HQ / Commissioner">HQ / Commissioner Meet</option>
-          </select>
-        </div>
+<!-- MAIN APP SECTION (Protected Dashboard) -->
+<div id="appSection" class="hidden">
+  <header>
+    <div class="header-left">
+      <button class="toggle-btn" onclick="toggleSidebar()" title="Toggle Sidebar">☰</button>
+      <div>
+        <h1>BMC Officer Smart Executive Planner</h1>
+        <p>Welcome, <span id="loggedUserName" style="font-weight: bold; text-decoration: underline;"></span> | Multi-stage batched alert system</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-alerts" onclick="showManualPendingAlerts()">🚨 View Alerts</button>
+      <button class="btn btn-notif" onclick="initNotifications()">🔔 Turn on Alerts</button>
+      <button class="btn btn-export" onclick="exportToCSV()">📥 Excel Export</button>
+      <button class="btn btn-logout" onclick="logoutUser()">🚪 Logout</button>
+    </div>
+  </header>
 
-        <!-- NEW: Officer Name Field -->
-        <div class="form-group">
-          <label>Follow-up Officer Name (Optional)</label>
-          <input type="text" id="officer" placeholder="E.g.: Mr. Sharma (EE) / Contractor Name">
-        </div>
-
-        <!-- NEW: Priority Field -->
-        <div class="form-group">
-          <label>Task Priority</label>
-          <select id="priority">
-            <option value="High">🔴 High Priority</option>
-            <option value="Medium" selected>🟡 Medium Priority</option>
-            <option value="Low">🟢 Low Priority</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Recurrence</label>
-          <select id="frequency" onchange="handleFrequencyOrDateChange()">
-            <option value="Daily">Daily</option>
-            <option value="Weekly">Weekly</option>
-            <option value="Monthly">Monthly</option>
-            <option value="Yearly">Yearly</option>
-            <option value="Once">One-Time</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Main Target Deadline</label>
-          <input type="datetime-local" id="finalDate" required onchange="handleFrequencyOrDateChange()">
-        </div>
-
-        <div class="form-group">
-          <label>Choose the reminder mode:</label>
-          <div class="mode-switch">
-            <label><input type="radio" name="reminderMode" value="AUTO" checked onchange="toggleReminderMode()"> ⚡ Auto</label>
-            <label><input type="radio" name="reminderMode" value="MANUAL" onchange="toggleReminderMode()"> 🛠️ Manual</label>
+  <div class="container">
+    <div class="layout" id="mainLayout">
+      
+      <div class="card" id="sidebarForm">
+        <h2 id="formTitle">+ Add New Tasks & Reminders</h2>
+        <form id="taskForm" onsubmit="handleFormSubmit(event)">
+          
+          <div class="form-group">
+            <label>Task / Scheme Title</label>
+            <input type="text" id="title" required placeholder="E.g.: STP SCADA Maintenance">
           </div>
-        </div>
+          
+          <div class="form-group">
+            <label>Department (Hold Ctrl to select multiple)</label>
+            <select id="dept" multiple required>
+              <option value="All Departments">All Departments (सभी विभाग)</option>
+              <option value="Solid Waste Mgmt (SWM)">Solid Waste Mgmt (SWM)</option>
+              <option value="Water Works (HE)">Water Works (HE)</option>
+              <option value="Drainage / STP">Drainage / STP SCADA</option>
+              <option value="Roads & Projects">Roads & Projects</option>
+              <option value="Health / Sanitation">Health / Sanitation</option>
+              <option value="HQ / Commissioner">HQ / Commissioner Meet</option>
+            </select>
+          </div>
 
-        <div id="autoModeContainer" style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px dashed #cbd5e1; margin-bottom: 12px;">
-          <label>Auto Pre-Alert Schedule:</label>
-          <select id="autoPreset" onchange="applyAutoReminders()"></select>
-        </div>
+          <div class="form-group">
+            <label>Follow-up Officer Name (Optional)</label>
+            <input type="text" id="officer" placeholder="E.g.: Mr. Sharma (EE) / Contractor Name">
+          </div>
 
-        <div id="manualModeContainer" style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px dashed #cbd5e1; margin-bottom: 12px; display: none;">
-          <div class="form-group"><label>1st Alert Date</label><input type="datetime-local" id="alert1"></div>
-          <div class="form-group"><label>2nd Alert Date</label><input type="datetime-local" id="alert2"></div>
-          <div class="form-group"><label>3rd Alert Date</label><input type="datetime-local" id="alert3"></div>
-        </div>
+          <div class="form-group">
+            <label>Task Priority</label>
+            <select id="priority">
+              <option value="High">🔴 High Priority</option>
+              <option value="Medium" selected>🟡 Medium Priority</option>
+              <option value="Low">🟢 Low Priority</option>
+            </select>
+          </div>
 
-        <div class="form-group">
-          <label>Work Details / Remarks</label>
-          <textarea id="details" placeholder="Add all necessary conditions, official remarks, etc..."></textarea>
-        </div>
+          <div class="form-group">
+            <label>Recurrence</label>
+            <select id="frequency" onchange="handleFrequencyOrDateChange()">
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Yearly">Yearly</option>
+              <option value="Once">One-Time</option>
+            </select>
+          </div>
 
-        <button type="submit" id="submitBtn" class="btn-primary">Save Planner</button>
-        <button type="button" id="cancelEditBtn" class="btn" style="width: 100%; display: none; margin-top: 8px; text-align:center;" onclick="cancelEdit()">Cancel Edit</button>
-      </form>
-    </div>
+          <div class="form-group">
+            <label>Main Target Deadline</label>
+            <input type="datetime-local" id="finalDate" required onchange="handleFrequencyOrDateChange()">
+          </div>
 
-    <div class="card" style="display:flex; flex-direction:column; overflow:hidden;">
-      
-      <div class="dashboard-stats">
-        <div class="stat-box stat-total">Total Tasks <span id="statTotal">0</span></div>
-        <div class="stat-box stat-pending">Pending Work <span id="statPending">0</span></div>
-        <div class="stat-box stat-today" title="Click to view today's tasks" onclick="showDueTodayTasks()">Due Today <span id="statToday">0</span></div>
-        <div class="stat-box stat-completed">Completed <span id="statCompleted">0</span></div>
+          <div class="form-group">
+            <label>Choose the reminder mode:</label>
+            <div class="mode-switch">
+              <label><input type="radio" name="reminderMode" value="AUTO" checked onchange="toggleReminderMode()"> ⚡ Auto</label>
+              <label><input type="radio" name="reminderMode" value="MANUAL" onchange="toggleReminderMode()"> 🛠️ Manual</label>
+            </div>
+          </div>
+
+          <div id="autoModeContainer" style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px dashed #cbd5e1; margin-bottom: 12px;">
+            <label>Auto Pre-Alert Schedule:</label>
+            <select id="autoPreset" onchange="applyAutoReminders()"></select>
+          </div>
+
+          <div id="manualModeContainer" style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px dashed #cbd5e1; margin-bottom: 12px; display: none;">
+            <div class="form-group"><label>1st Alert Date</label><input type="datetime-local" id="alert1"></div>
+            <div class="form-group"><label>2nd Alert Date</label><input type="datetime-local" id="alert2"></div>
+            <div class="form-group"><label>3rd Alert Date</label><input type="datetime-local" id="alert3"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Work Details / Remarks</label>
+            <textarea id="details" placeholder="Add all necessary conditions, official remarks, etc..."></textarea>
+          </div>
+
+          <button type="submit" id="submitBtn" class="btn-primary">Save Planner</button>
+          <button type="button" id="cancelEditBtn" class="btn" style="width: 100%; display: none; margin-top: 8px; text-align:center; background:#e2e8f0; color:#0f172a;" onclick="cancelEdit()">Cancel Edit</button>
+        </form>
       </div>
 
-      <h2>
-        Task Register (List View)
-        <select id="filterFreq" class="filter-select" onchange="currentPage=1; render()">
-          <option value="All">Show All Frequencies</option>
-          <option value="Daily">Daily Tasks</option>
-          <option value="Weekly">Weekly Tasks</option>
-          <option value="Monthly">Monthly Tasks</option>
-          <option value="Yearly">Yearly Tasks</option>
-          <option value="Once">One-Time Tasks</option>
-        </select>
-      </h2>
-      
-      <div class="table-responsive" style="flex: 1; overflow-y: auto; max-height: 600px;">
-        <table class="bmc-table">
-          <thead>
-            <tr>
-              <th>Task Details (Dept & Officer)</th>
-              <th>Target Deadline</th>
-              <th>Freq & Priority</th>
-              <th>Progress</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="taskList"></tbody>
-        </table>
-        <div id="paginationControls" class="pagination"></div>
+      <div class="card" style="display:flex; flex-direction:column; overflow:hidden;">
+        
+        <div class="dashboard-stats">
+          <div class="stat-box stat-total">Total Tasks <span id="statTotal">0</span></div>
+          <div class="stat-box stat-pending">Pending Work <span id="statPending">0</span></div>
+          <div class="stat-box stat-today" title="Click to view today's tasks" onclick="showDueTodayTasks()">Due Today <span id="statToday">0</span></div>
+          <div class="stat-box stat-completed">Completed <span id="statCompleted">0</span></div>
+        </div>
+
+        <h2>
+          Task Register (List View)
+          <select id="filterFreq" class="filter-select" onchange="currentPage=1; render()">
+            <option value="All">Show All Frequencies</option>
+            <option value="Daily">Daily Tasks</option>
+            <option value="Weekly">Weekly Tasks</option>
+            <option value="Monthly">Monthly Tasks</option>
+            <option value="Yearly">Yearly Tasks</option>
+            <option value="Once">One-Time Tasks</option>
+          </select>
+        </h2>
+        
+        <div class="table-responsive" style="flex: 1; overflow-y: auto; max-height: 600px;">
+          <table class="bmc-table">
+            <thead>
+              <tr>
+                <th>Task Details (Dept & Officer)</th>
+                <th>Target Deadline</th>
+                <th>Freq & Priority</th>
+                <th>Progress</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="taskList"></tbody>
+          </table>
+          <div id="paginationControls" class="pagination"></div>
+        </div>
       </div>
+      
     </div>
-    
   </div>
 </div>
 
@@ -295,10 +320,78 @@
   let tasks = [];
   let currentBatchAlertIds = [];
   let editingTaskId = null;
+  let isSignupMode = false;
   
   let currentPage = 1;
   const tasksPerPage = 10;
 
+  // --- AUTHENTICATION & SESSION LOGIC ---
+  async function checkAuthStatus() {
+    try {
+      const res = await fetch('/api/check-auth');
+      const data = await res.json();
+      if (data.isAuthenticated) {
+        document.getElementById('loggedUserName').innerText = data.username;
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('appSection').classList.remove('hidden');
+        loadTasksFromServer();
+      } else {
+        document.getElementById('authSection').classList.remove('hidden');
+        document.getElementById('appSection').classList.add('hidden');
+      }
+    } catch(e) {
+      console.error('Auth check failed:', e);
+    }
+  }
+
+  function toggleAuthMode() {
+    isSignupMode = !isSignupMode;
+    document.getElementById('authTitle').innerText = isSignupMode ? 'BMC Planner Sign Up' : 'BMC Planner Login';
+    document.getElementById('authSubmitBtn').innerText = isSignupMode ? 'Register' : 'Login';
+    document.getElementById('toggleAuthMode').innerText = isSignupMode ? 'Already have an account? Login' : 'Need an account? Sign Up';
+    document.getElementById('authMsg').innerHTML = '';
+  }
+
+  async function handleAuthSubmit(e) {
+    e.preventDefault();
+    const username = document.getElementById('authUsername').value;
+    const password = document.getElementById('authPassword').value;
+    const endpoint = isSignupMode ? '/api/signup' : '/api/login';
+    const msgBox = document.getElementById('authMsg');
+    msgBox.innerHTML = '';
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        if (isSignupMode) {
+          msgBox.innerHTML = `<span style="color: green; font-size: 13px; font-weight: bold;">${data.message}</span>`;
+          isSignupMode = false;
+          document.getElementById('authTitle').innerText = 'BMC Planner Login';
+          document.getElementById('authSubmitBtn').innerText = 'Login';
+          document.getElementById('toggleAuthMode').innerText = 'Need an account? Sign Up';
+        } else {
+          checkAuthStatus();
+        }
+      } else {
+        msgBox.innerHTML = `<span style="color: red; font-size: 13px; font-weight: bold;">${data.error}</span>`;
+      }
+    } catch(err) {
+      msgBox.innerHTML = `<span style="color: red; font-size: 13px;">Server communication error.</span>`;
+    }
+  }
+
+  async function logoutUser() {
+    await fetch('/api/logout', { method: 'POST' });
+    checkAuthStatus();
+  }
+
+  // --- CUSTOM DIALOG SYSTEM ---
   function openCustomDialog(options) {
     return new Promise((resolve) => {
       const modal = document.getElementById('customDialogModal');
@@ -435,9 +528,11 @@
     if (mode === 'AUTO') applyAutoReminders();
   }
 
+  // --- BACKEND API COMMUNICATIONS ---
   function loadTasksFromServer() {
     fetch('/api/tasks').then(res => res.json()).then(data => { tasks = data; render(); }).catch(e => console.error(e));
   }
+  
   function saveAndRender() {
     fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tasks) }).then(() => render());
   }
@@ -849,7 +944,7 @@
 
   window.onload = () => {
     handleFrequencyOrDateChange();
-    loadTasksFromServer();
+    checkAuthStatus();
   };
 </script>
 </body>
