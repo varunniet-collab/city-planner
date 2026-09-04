@@ -142,7 +142,7 @@
       <input type="password" id="authPassword" required placeholder="Enter your password">
     </div>
     <button type="submit" id="authSubmitBtn" class="btn-primary">Login</button>
-    <button type="button" class="btn" style="width: 100%; margin-top: 8px; background: #e2e8f0; color: #0f172a;" id="toggleAuthMode" onclick="toggleAuthMode()">Need an account? Sign Up</button>
+    <button type="button" class="btn" style="width: 100%; margin-top: 8px; background: #e2e8f0; color: #0f172a;" id="switchBtn" onclick="toggleAuthMode()">Need an account? Sign Up</button>
   </form>
 </div>
 
@@ -348,7 +348,7 @@
     isSignupMode = !isSignupMode;
     document.getElementById('authTitle').innerText = isSignupMode ? 'BMC Planner Sign Up' : 'BMC Planner Login';
     document.getElementById('authSubmitBtn').innerText = isSignupMode ? 'Register' : 'Login';
-    document.getElementById('toggleAuthMode').innerText = isSignupMode ? 'Already have an account? Login' : 'Need an account? Sign Up';
+    document.getElementById('switchBtn').innerText = isSignupMode ? 'Already have an account? Login' : 'Need an account? Sign Up';
     document.getElementById('authMsg').innerHTML = ''; // Clear errors
   }
 
