@@ -131,7 +131,7 @@
 <!-- AUTH SECTION (Login / Signup) -->
 <div id="authSection" class="auth-container">
   <h2 id="authTitle">BMC Planner Login</h2>
-  <div id="authMsg" style="margin-bottom: 10px; text-align: center;"></div>
+  <div id="authMsg" style="margin-bottom: 10px; text-align: center; min-height: 20px;"></div>
   <form id="authForm" onsubmit="handleAuthSubmit(event)">
     <div class="form-group">
       <label>Username</label>
@@ -349,16 +349,20 @@
     document.getElementById('authTitle').innerText = isSignupMode ? 'BMC Planner Sign Up' : 'BMC Planner Login';
     document.getElementById('authSubmitBtn').innerText = isSignupMode ? 'Register' : 'Login';
     document.getElementById('toggleAuthMode').innerText = isSignupMode ? 'Already have an account? Login' : 'Need an account? Sign Up';
-    document.getElementById('authMsg').innerHTML = '';
+    document.getElementById('authMsg').innerHTML = ''; // Clear errors
   }
 
   async function handleAuthSubmit(e) {
     e.preventDefault();
-    const username = document.getElementById('authUsername').value;
-    const password = document.getElementById('authPassword').value;
+    const username = document.getElementById('authUsername').value.trim();
+    const password = document.getElementById('authPassword').value.trim();
     const endpoint = isSignupMode ? '/api/signup' : '/api/login';
     const msgBox = document.getElementById('authMsg');
-    msgBox.innerHTML = '';
+    
+    if (!username || !password) {
+        msgBox.innerHTML = `<span style="color: red; font-size: 13px; font-weight: bold;">Please fill both fields.</span>`;
+        return;
+    }
 
     try {
       const res = await fetch(endpoint, {
@@ -370,19 +374,21 @@
 
       if (res.ok) {
         if (isSignupMode) {
-          msgBox.innerHTML = `<span style="color: green; font-size: 13px; font-weight: bold;">${data.message}</span>`;
-          isSignupMode = false;
-          document.getElementById('authTitle').innerText = 'BMC Planner Login';
-          document.getElementById('authSubmitBtn').innerText = 'Login';
-          document.getElementById('toggleAuthMode').innerText = 'Need an account? Sign Up';
+          // Success Sign Up -> Auto Switch to Login
+          msgBox.innerHTML = `<span style="color: green; font-size: 13px; font-weight: bold;">${data.message || 'Signup successful! Please log in.'}</span>`;
+          setTimeout(() => {
+              toggleAuthMode();
+              document.getElementById('authPassword').value = ''; // Clear password for security
+          }, 1500);
         } else {
+          // Success Login -> Load App
           checkAuthStatus();
         }
       } else {
-        msgBox.innerHTML = `<span style="color: red; font-size: 13px; font-weight: bold;">${data.error}</span>`;
+        msgBox.innerHTML = `<span style="color: red; font-size: 13px; font-weight: bold;">${data.error || 'Invalid request'}</span>`;
       }
     } catch(err) {
-      msgBox.innerHTML = `<span style="color: red; font-size: 13px;">Server communication error.</span>`;
+      msgBox.innerHTML = `<span style="color: red; font-size: 13px; font-weight: bold;">Server connection error.</span>`;
     }
   }
 
