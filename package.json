@@ -1,18 +1,17 @@
 {
   "name": "bmc_planner",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "BMC Officer Smart Executive Planner",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-mongo": "^5.1.0",
     "cors": "^2.8.6",
-    "express": "^5.2.1",
-    "mongoose": "^9.9.4"
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mongoose": "^8.3.1"
   }
 }
