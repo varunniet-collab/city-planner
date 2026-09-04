@@ -8,8 +8,10 @@ const MongoStore = require('connect-mongo');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// MongoDB Connection with Error Catching
+// Original SRV MongoDB URI
 const MONGO_URI = 'mongodb+srv://varunnietcollab_db_user:Uq7g0qB6yQfQ112h@cluster0.z19tq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+
+// Connect to MongoDB asynchronously
 mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB Connected Successfully'))
   .catch(err => console.error('MongoDB Connection Error:', err));
@@ -137,4 +139,7 @@ app.post('/api/tasks', isAuthenticated, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Start server immediately to prevent 502 Bad Gateway on Render
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
