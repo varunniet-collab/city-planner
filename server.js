@@ -8,22 +8,22 @@ const MongoStore = require('connect-mongo');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Original SRV MongoDB URI
-const MONGO_URI = 'mongodb+srv://varunnietcollab_db_user:Uq7g0qB6yQfQ112h@cluster0.z19tq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// ✅ कल वाला सही (Working) MongoDB URI
+const MONGO_URI = "mongodb+srv://varunniet_db_user:vXfNxkMzm9wsB6nt@smartplanner.vdbgfiv.mongodb.net/bmc_planner?retryWrites=true&w=majority&appName=SmartPlanner";
 
-// Connect to MongoDB asynchronously
+// Connect to MongoDB
 mongoose.connect(MONGO_URI)
-  .then(() => console.log('MongoDB Connected Successfully'))
-  .catch(err => console.error('MongoDB Connection Error:', err));
+  .then(() => console.log('✅ Cloud Database (MongoDB) Connected Successfully!'))
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// User Schema
+// User Schema (लॉगिन/साइनअप के लिए)
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true }
 });
 const User = mongoose.model('User', userSchema);
 
-// Data/Planner Schema (Linked with userId)
+// Data/Planner Schema (हर यूज़र का अलग डेटा सेव करने के लिए)
 const itemSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   tasks: Array
@@ -44,7 +44,7 @@ app.use(session({
   cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }));
 
-// Authentication Middleware
+// Authentication Middleware (लॉगिन चेक करने के लिए)
 function isAuthenticated(req, res, next) {
   if (req.session && req.session.userId) {
     return next();
@@ -52,7 +52,7 @@ function isAuthenticated(req, res, next) {
   res.status(401).json({ error: 'Unauthorized. Please log in.' });
 }
 
-// Routes: Signup
+// API: Signup
 app.post('/api/signup', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -73,7 +73,7 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// Routes: Login
+// API: Login
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -90,7 +90,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Routes: Check Auth Status
+// API: Check Auth Status
 app.get('/api/check-auth', (req, res) => {
   if (req.session && req.session.userId) {
     res.json({ isAuthenticated: true, username: req.session.username });
@@ -99,7 +99,7 @@ app.get('/api/check-auth', (req, res) => {
   }
 });
 
-// Routes: Logout
+// API: Logout
 app.post('/api/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) return res.status(500).json({ error: 'Could not log out.' });
@@ -108,7 +108,7 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
-// Routes: Get Tasks
+// API: Get Tasks
 app.get('/api/tasks', isAuthenticated, async (req, res) => {
   try {
     let userData = await Item.findOne({ userId: req.session.userId });
@@ -123,7 +123,7 @@ app.get('/api/tasks', isAuthenticated, async (req, res) => {
   }
 });
 
-// Routes: Save Tasks
+// API: Save Tasks
 app.post('/api/tasks', isAuthenticated, async (req, res) => {
   try {
     const tasks = req.body;
@@ -139,7 +139,7 @@ app.post('/api/tasks', isAuthenticated, async (req, res) => {
   }
 });
 
-// Start server immediately to prevent 502 Bad Gateway on Render
+// Start Server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
