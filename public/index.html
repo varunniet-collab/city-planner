@@ -42,9 +42,8 @@
     header p { margin: 4px 0 0 0; font-size: 12px; opacity: 0.9; }
     
     .container { max-width: 1350px; margin: 15px auto; padding: 0 15px; }
-    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .btn { padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
-    .btn-notif { background: var(--warning); color: #000; }
+    .header-actions { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; }
+    .btn { padding: 7px 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }    .btn-notif { background: var(--warning); color: #000; }
     .btn-export { background: #059669; color: white; }
     .btn-alerts { background: #e11d48; color: white; }
     .btn-logout { background: #dc2626; color: white; }
@@ -260,10 +259,10 @@
           <div class="stat-box stat-completed">Completed <span id="statCompleted">0</span></div>
         </div>
 
-        <h2>
-          Task Register (List View)
-          <select id="filterFreq" class="filter-select" onchange="currentPage=1; render()">
-            <option value="All">Show All Frequencies</option>
+        <h2 style="display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 10px;">
+          <span style="white-space: nowrap; font-size: 15px;">Task Register (List View)</span>
+          <select id="filterFreq" class="filter-select" style="max-width: 140px; font-size: 11px; padding: 4px;" onchange="currentPage=1; render()">
+            <option value="All">All Frequencies</option>
             <option value="Daily">Daily Tasks</option>
             <option value="Weekly">Weekly Tasks</option>
             <option value="Monthly">Monthly Tasks</option>
