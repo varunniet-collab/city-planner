@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BMC Officer Smart Executive Planner</title>
+  
+  <!-- PWA Links -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1e3a8a">
+  
   <style>
     :root {
       --primary: #1e3a8a;
@@ -15,9 +20,6 @@
       --card: #ffffff;
       --text: #0f172a;
     }
-
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#1e3a8a">
     
     * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
     body { background-color: var(--bg); margin: 0; padding: 75px 0 20px 0; color: var(--text); }
@@ -38,12 +40,13 @@
     .header-left { display: flex; align-items: center; gap: 15px; }
     .toggle-btn { background: rgba(255,255,255,0.2); border: none; color: white; font-size: 20px; cursor: pointer; padding: 5px 12px; border-radius: 6px; }
     .toggle-btn:hover { background: rgba(255,255,255,0.3); }
-    header h1 { margin: 0; font-size: 18px; }
+    header h1 { margin: 0; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     header p { margin: 4px 0 0 0; font-size: 12px; opacity: 0.9; }
     
     .container { max-width: 1350px; margin: 15px auto; padding: 0 15px; }
     .header-actions { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; }
-    .btn { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }    .btn-notif { background: var(--warning); color: #000; }
+    .btn { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }    
+    .btn-notif { background: var(--warning); color: #000; }
     .btn-export { background: #059669; color: white; }
     .btn-alerts { background: #e11d48; color: white; }
     .btn-logout { background: #dc2626; color: white; }
@@ -130,7 +133,7 @@
 </head>
 <body>
 
-<!-- AUTH SECTION (Login / Signup) -->
+<!-- AUTH SECTION (Login / Signup / Forgot Password) -->
 <div id="authSection" class="auth-container">
   <h2 id="authTitle">BMC Planner Login</h2>
   <div id="authMsg" style="margin-bottom: 10px; text-align: center; min-height: 20px;"></div>
@@ -139,12 +142,24 @@
       <label>Username</label>
       <input type="text" id="authUsername" required placeholder="Enter your username">
     </div>
-    <div class="form-group">
-      <label>Password</label>
+    
+    <div class="form-group" id="pinGroup" style="display: none;">
+      <label>Security PIN (4 Digit)</label>
+      <input type="text" id="authPin" placeholder="Remember this PIN to reset password" maxlength="4">
+    </div>
+
+    <div class="form-group" id="passGroup">
+      <label id="passLabel">Password</label>
       <input type="password" id="authPassword" required placeholder="Enter your password">
     </div>
+    
+    <div style="text-align: right; margin-bottom: 10px; margin-top: -5px;" id="forgotLinkDiv">
+       <a href="#" onclick="setMode('forgot')" style="font-size: 12px; color: var(--secondary); text-decoration: none; font-weight: bold;">Forgot Password?</a>
+    </div>
+
     <button type="submit" id="authSubmitBtn" class="btn-primary">Login</button>
     <button type="button" class="btn" style="width: 100%; margin-top: 8px; background: #e2e8f0; color: #0f172a;" id="switchBtn" onclick="toggleAuthMode()">Need an account? Sign Up</button>
+    <button type="button" class="btn" style="width: 100%; margin-top: 8px; background: #fee2e2; color: #dc2626; display: none;" id="backToLoginBtn" onclick="setMode('login')">Back to Login</button>
   </form>
 </div>
 
@@ -323,7 +338,7 @@
   let tasks = [];
   let currentBatchAlertIds = [];
   let editingTaskId = null;
-  let isSignupMode = false;
+  let authMode = 'login'; 
   
   let currentPage = 1;
   const tasksPerPage = 10;
@@ -347,44 +362,88 @@
     }
   }
 
+  function setMode(mode) {
+    authMode = mode;
+    document.getElementById('authMsg').innerHTML = '';
+    const pinGroup = document.getElementById('pinGroup');
+    const passLabel = document.getElementById('passLabel');
+    const forgotLinkDiv = document.getElementById('forgotLinkDiv');
+    const switchBtn = document.getElementById('switchBtn');
+    const backToLoginBtn = document.getElementById('backToLoginBtn');
+    const authTitle = document.getElementById('authTitle');
+    const authSubmitBtn = document.getElementById('authSubmitBtn');
+
+    if (mode === 'login') {
+      authTitle.innerText = 'BMC Planner Login';
+      pinGroup.style.display = 'none';
+      passLabel.innerText = 'Password';
+      forgotLinkDiv.style.display = 'block';
+      switchBtn.style.display = 'block';
+      switchBtn.innerText = 'Need an account? Sign Up';
+      backToLoginBtn.style.display = 'none';
+      authSubmitBtn.innerText = 'Login';
+    } else if (mode === 'signup') {
+      authTitle.innerText = 'BMC Planner Sign Up';
+      pinGroup.style.display = 'block';
+      passLabel.innerText = 'Create Password';
+      forgotLinkDiv.style.display = 'none';
+      switchBtn.style.display = 'block';
+      switchBtn.innerText = 'Already have an account? Login';
+      backToLoginBtn.style.display = 'none';
+      authSubmitBtn.innerText = 'Register';
+    } else if (mode === 'forgot') {
+      authTitle.innerText = 'Reset Password';
+      pinGroup.style.display = 'block';
+      passLabel.innerText = 'Create New Password';
+      forgotLinkDiv.style.display = 'none';
+      switchBtn.style.display = 'none';
+      backToLoginBtn.style.display = 'block';
+      authSubmitBtn.innerText = 'Reset Password';
+    }
+  }
+
   function toggleAuthMode() {
-    isSignupMode = !isSignupMode;
-    document.getElementById('authTitle').innerText = isSignupMode ? 'BMC Planner Sign Up' : 'BMC Planner Login';
-    document.getElementById('authSubmitBtn').innerText = isSignupMode ? 'Register' : 'Login';
-    document.getElementById('switchBtn').innerText = isSignupMode ? 'Already have an account? Login' : 'Need an account? Sign Up';
-    document.getElementById('authMsg').innerHTML = ''; // Clear errors
+    setMode(authMode === 'login' ? 'signup' : 'login');
   }
 
   async function handleAuthSubmit(e) {
     e.preventDefault();
     const username = document.getElementById('authUsername').value.trim();
-    const password = document.getElementById('authPassword').value.trim();
-    const endpoint = isSignupMode ? '/api/signup' : '/api/login';
+    const password = document.getElementById('authPassword').value.trim(); 
+    const securityPin = document.getElementById('authPin').value.trim();
     const msgBox = document.getElementById('authMsg');
     
-    if (!username || !password) {
-        msgBox.innerHTML = `<span style="color: red; font-size: 13px; font-weight: bold;">Please fill both fields.</span>`;
-        return;
+    let endpoint = '';
+    let payload = { username, password };
+
+    if (authMode === 'login') {
+      endpoint = '/api/login';
+    } else if (authMode === 'signup') {
+      if(!securityPin) { msgBox.innerHTML = `<span style="color:red; font-size:13px;">Please enter a Security PIN.</span>`; return; }
+      endpoint = '/api/signup';
+      payload.securityPin = securityPin;
+    } else if (authMode === 'forgot') {
+      if(!securityPin) { msgBox.innerHTML = `<span style="color:red; font-size:13px;">Please enter your Security PIN.</span>`; return; }
+      endpoint = '/api/reset-password';
+      payload = { username, securityPin, newPassword: password };
     }
 
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
 
       if (res.ok) {
-        if (isSignupMode) {
-          // Success Sign Up -> Auto Switch to Login
-          msgBox.innerHTML = `<span style="color: green; font-size: 13px; font-weight: bold;">${data.message || 'Signup successful! Please log in.'}</span>`;
-          setTimeout(() => {
-              toggleAuthMode();
-              document.getElementById('authPassword').value = ''; // Clear password for security
-          }, 1500);
+        if (authMode === 'signup') {
+          msgBox.innerHTML = `<span style="color: green; font-size: 13px; font-weight: bold;">Signup successful! Please log in.</span>`;
+          setTimeout(() => { setMode('login'); document.getElementById('authPassword').value = ''; }, 1500);
+        } else if (authMode === 'forgot') {
+          msgBox.innerHTML = `<span style="color: green; font-size: 13px; font-weight: bold;">Password Reset Successful!</span>`;
+          setTimeout(() => { setMode('login'); document.getElementById('authPassword').value = ''; }, 1500);
         } else {
-          // Success Login -> Load App
           checkAuthStatus();
         }
       } else {
@@ -859,7 +918,7 @@
       paginationContainer.innerHTML = pgHtml;
     }
 
-    // ✅ Yahan naya Auto-Suggestion code add kiya gaya hai
+    // Auto-Suggestion logic
     const officerList = document.getElementById('officerList');
     if (officerList) {
       let uniqueOfficers = new Set();
