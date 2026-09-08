@@ -69,7 +69,7 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// API: Forgot Password (Send OTP) - ✅ FIXED WITH ERROR LOGGING & OLD ACCOUNT CHECK
+// API: Forgot Password (Send OTP) - ✅ FIXED CONNECTION TIMEOUT
 app.post('/api/forgot-password', async (req, res) => {
   const { username } = req.body;
   try {
@@ -91,8 +91,11 @@ app.post('/api/forgot-password', async (req, res) => {
     user.resetOtp = otp;
     await user.save();
 
+    // ✅ Secure SMTP Connection for Render
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: { user: 'varun.niet@gmail.com', pass: 'nvmywxibsszyotbw' }
     });
 
@@ -127,13 +130,16 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-// API: Send Task Email Alert
+// API: Send Task Email Alert - ✅ FIXED CONNECTION TIMEOUT
 app.post('/api/send-email', async (req, res) => {
   const { officerEmail, taskTitle, deadline, priority, details } = req.body;
   if (!officerEmail) return res.status(400).json({ error: "No email provided" });
 
+  // ✅ Secure SMTP Connection for Render
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: { user: 'varun.niet@gmail.com', pass: 'nvmywxibsszyotbw' }
   });
 
