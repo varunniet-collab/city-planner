@@ -69,7 +69,7 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// API: Forgot Password (Send OTP) - ✅ FIXED CONNECTION TIMEOUT
+// API: Forgot Password (Send OTP via Brevo SMTP)
 app.post('/api/forgot-password', async (req, res) => {
   const { username } = req.body;
   try {
@@ -81,7 +81,6 @@ app.post('/api/forgot-password', async (req, res) => {
       return res.status(404).json({ error: "User not found." });
     }
     
-    // पुराने अकाउंट्स को क्रैश होने से बचाने के लिए चेक
     if (!user.email) {
       console.log(`Error: Account '${username}' has no email linked.`);
       return res.status(400).json({ error: "Old account (No email linked). Cannot reset password." });
@@ -91,12 +90,13 @@ app.post('/api/forgot-password', async (req, res) => {
     user.resetOtp = otp;
     await user.save();
 
-    // ✅ Secure SMTP Connection for Render
     const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: 'varun.niet@gmail.com', pass: 'nvmywxibsszyotbw' }
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      auth: {
+        user: 'varun.niet@gmail.com',
+        pass: 'xsmtpsib-f9e217ac91f8d83c5b9aaf8cd22793f4f7c6d57bdd13854497be937c0d272247-TslNKEYze07keZZP'
+      }
     });
 
     await transporter.sendMail({
@@ -130,17 +130,18 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-// API: Send Task Email Alert - ✅ FIXED CONNECTION TIMEOUT
+// API: Send Task Email Alert via Brevo SMTP
 app.post('/api/send-email', async (req, res) => {
   const { officerEmail, taskTitle, deadline, priority, details } = req.body;
   if (!officerEmail) return res.status(400).json({ error: "No email provided" });
 
-  // ✅ Secure SMTP Connection for Render
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: { user: 'varun.niet@gmail.com', pass: 'nvmywxibsszyotbw' }
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    auth: {
+      user: 'varun.niet@gmail.com',
+      pass: 'xsmtpsib-f9e217ac91f8d83c5b9aaf8cd22793f4f7c6d57bdd13854497be937c0d272247-TslNKEYze07keZZP'
+    }
   });
 
   const mailOptions = {
@@ -167,6 +168,7 @@ app.post('/api/send-email', async (req, res) => {
     await transporter.sendMail(mailOptions);
     res.json({ message: "Email sent successfully" });
   } catch (error) {
+    console.error("🚨 TASK EMAIL ERROR:", error);
     res.status(500).json({ error: "Failed to send email" });
   }
 });
