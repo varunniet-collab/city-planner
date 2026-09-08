@@ -86,7 +86,7 @@ app.post('/api/forgot-password', async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: 'YOUR_EMAIL@gmail.com',
+      from: 'varun.niet@gmail.com',
       to: user.email,
       subject: '🔑 BMC Planner - Password Reset OTP',
       html: `<h3>Your Password Reset OTP is: <b style="color:red;">${otp}</b></h3><p>Do not share this with anyone.</p>`
@@ -121,11 +121,11 @@ app.post('/api/send-email', async (req, res) => {
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: { user: 'YOUR_EMAIL@gmail.com', pass: 'YOUR_16_DIGIT_PASSWORD' }
+    auth: { user: 'varun.niet@gmail.com', pass: 'nvmywxibsszyotbw' }
   });
 
   const mailOptions = {
-    from: 'YOUR_EMAIL@gmail.com',
+    from: 'varun.niet@gmail.com',
     to: officerEmail,
     subject: `🚨 BMC New Task Assigned: ${taskTitle}`,
     html: `
