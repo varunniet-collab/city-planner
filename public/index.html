@@ -193,7 +193,8 @@
 
           <div class="form-group">
             <label>Follow-up Officer Name (Optional)</label>
-            <input type="text" id="officer" placeholder="E.g.: Mr. Sharma (EE) / Contractor Name">
+            <input type="text" id="officer" list="officerList" autocomplete="off" placeholder="E.g.: Mr. Sharma (EE) / Contractor Name">
+            <datalist id="officerList"></datalist>
           </div>
 
           <div class="form-group">
@@ -856,6 +857,25 @@
       for (let i = 1; i <= totalPages; i++) { pgHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`; }
       if (currentPage < totalPages) pgHtml += `<button class="page-btn" onclick="changePage(${currentPage + 1})">Next</button>`;
       paginationContainer.innerHTML = pgHtml;
+    }
+
+    // ✅ Yahan naya Auto-Suggestion code add kiya gaya hai
+    const officerList = document.getElementById('officerList');
+    if (officerList) {
+      let uniqueOfficers = new Set();
+      tasks.forEach(t => {
+        if (t.officer) {
+          t.officer.split(',').forEach(name => {
+            if(name.trim()) uniqueOfficers.add(name.trim());
+          });
+        }
+      });
+      officerList.innerHTML = '';
+      uniqueOfficers.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        officerList.appendChild(opt);
+      });
     }
   }
 
