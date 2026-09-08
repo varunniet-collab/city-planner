@@ -465,9 +465,15 @@
       try {
         const res = await fetch('/api/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
         const data = await res.json();
-        if (res.ok) { msgBox.innerHTML = `<span style="color:green; font-size:13px;">${data.message}</span>`; setMode('reset'); }
-        else msgBox.innerHTML = `<span style="color:red; font-size:13px;">${data.error}</span>`;
-      } catch(err) { msgBox.innerHTML = `<span style="color:red; font-size:13px;">Server error.</span>`; }
+        if (res.ok) { 
+          msgBox.innerHTML = `<span style="color:green; font-size:13px;">${data.message}</span>`; 
+          setMode('reset'); 
+        } else { 
+          msgBox.innerHTML = `<span style="color:red; font-size:13px;">${data.error || 'Failed to send OTP'}</span>`; 
+        }
+      } catch(err) { 
+        msgBox.innerHTML = `<span style="color:red; font-size:13px;">Server connection error.</span>`; 
+      }
     }
     else if (authMode === 'reset') {
       if(!username || !otp || !password) return msgBox.innerHTML = `<span style="color:red; font-size:13px;">Fill all fields.</span>`;
