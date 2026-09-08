@@ -69,12 +69,23 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// API: Forgot Password (Send OTP)
+// API: Forgot Password (Send OTP) - ✅ FIXED WITH ERROR LOGGING & OLD ACCOUNT CHECK
 app.post('/api/forgot-password', async (req, res) => {
   const { username } = req.body;
   try {
+    console.log(`OTP Request received for: ${username}`);
     const user = await User.findOne({ username });
-    if (!user) return res.status(404).json({ error: "User not found." });
+    
+    if (!user) {
+      console.log("Error: User not found in database.");
+      return res.status(404).json({ error: "User not found." });
+    }
+    
+    // पुराने अकाउंट्स को क्रैश होने से बचाने के लिए चेक
+    if (!user.email) {
+      console.log(`Error: Account '${username}' has no email linked.`);
+      return res.status(400).json({ error: "Old account (No email linked). Cannot reset password." });
+    }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.resetOtp = otp;
@@ -92,9 +103,11 @@ app.post('/api/forgot-password', async (req, res) => {
       html: `<h3>Your Password Reset OTP is: <b style="color:red;">${otp}</b></h3><p>Do not share this with anyone.</p>`
     });
 
+    console.log(`Success: OTP sent to ${user.email}`);
     res.json({ message: "OTP sent to your registered email!" });
   } catch (error) {
-    res.status(500).json({ error: "Failed to send OTP." });
+    console.error("🚨 EMAIL ERROR:", error);
+    res.status(500).json({ error: "Failed to send OTP. Check Render Logs." });
   }
 });
 
