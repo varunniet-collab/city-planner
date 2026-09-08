@@ -95,7 +95,7 @@ app.post('/api/forgot-password', async (req, res) => {
       port: 587,
       auth: {
         user: 'varun.niet@gmail.com',
-        pass: 'xsmtpsib-f9e217ac91f8d83c5b9aaf8cd22793f4f7c6d57bdd13854497be937c0d272247-TslNKEYze07keZZP'
+        pass: 'process.env.BREVO_PASS'
       }
     });
 
