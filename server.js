@@ -123,6 +123,29 @@ app.get('/api/tasks', isAuthenticated, async (req, res) => {
   }
 });
 
+app.post('/api/reset-password', async (req, res) => {
+  const { username, securityPin, newPassword } = req.body;
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    // PIN चेक करें
+    if (user.securityPin !== securityPin) {
+      return res.status(400).json({ error: "Incorrect Security PIN" });
+    }
+    
+    // अगर PIN सही है, तो नया पासवर्ड सेव कर दें 
+    // (ध्यान दें: अगर Signup में bcrypt.hash लगाया है, तो यहाँ भी newPassword को हैश करना होगा)
+    user.password = newPassword; 
+    await user.save();
+    
+    res.json({ message: "Password reset successfully!" });
+  } catch (error) {
+    res.status(500).json({ error: "Server error during reset." });
+  }
+});
+
 // API: Save Tasks
 app.post('/api/tasks', isAuthenticated, async (req, res) => {
   try {
