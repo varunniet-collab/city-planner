@@ -8,7 +8,7 @@ const MongoStore = require('connect-mongo');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ कल वाला सही (Working) MongoDB URI
+// ✅ MongoDB URI
 const MONGO_URI = "mongodb+srv://varunniet_db_user:vXfNxkMzm9wsB6nt@smartplanner.vdbgfiv.mongodb.net/bmc_planner?retryWrites=true&w=majority&appName=SmartPlanner";
 
 // Connect to MongoDB
@@ -16,14 +16,15 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ Cloud Database (MongoDB) Connected Successfully!'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// User Schema (लॉगिन/साइनअप के लिए)
+// ✅ User Schema (securityPin जोड़ा गया)
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
+  password: { type: String, required: true },
+  securityPin: { type: String, required: true }
 });
 const User = mongoose.model('User', userSchema);
 
-// Data/Planner Schema (हर यूज़र का अलग डेटा सेव करने के लिए)
+// Data/Planner Schema
 const itemSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   tasks: Array
@@ -44,7 +45,7 @@ app.use(session({
   cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }));
 
-// Authentication Middleware (लॉगिन चेक करने के लिए)
+// Authentication Middleware
 function isAuthenticated(req, res, next) {
   if (req.session && req.session.userId) {
     return next();
@@ -52,19 +53,19 @@ function isAuthenticated(req, res, next) {
   res.status(401).json({ error: 'Unauthorized. Please log in.' });
 }
 
-// API: Signup
+// ✅ API: Signup (securityPin रिसीव और सेव करने के लिए अपडेट किया गया)
 app.post('/api/signup', async (req, res) => {
   try {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required.' });
+    const { username, password, securityPin } = req.body;
+    if (!username || !password || !securityPin) {
+      return res.status(400).json({ error: 'Username, password and PIN are required.' });
     }
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({ error: 'Username already exists.' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, password: hashedPassword });
+    const newUser = new User({ username, password: hashedPassword, securityPin });
     await newUser.save();
     res.status(201).json({ message: 'Signup successful! Please log in.' });
   } catch (err) {
@@ -123,6 +124,7 @@ app.get('/api/tasks', isAuthenticated, async (req, res) => {
   }
 });
 
+// ✅ API: Reset Password (नए पासवर्ड को हैश करने के लिए अपडेट किया गया)
 app.post('/api/reset-password', async (req, res) => {
   const { username, securityPin, newPassword } = req.body;
   try {
@@ -130,14 +132,13 @@ app.post('/api/reset-password', async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    // PIN चेक करें
     if (user.securityPin !== securityPin) {
       return res.status(400).json({ error: "Incorrect Security PIN" });
     }
     
-    // अगर PIN सही है, तो नया पासवर्ड सेव कर दें 
-    // (ध्यान दें: अगर Signup में bcrypt.hash लगाया है, तो यहाँ भी newPassword को हैश करना होगा)
-    user.password = newPassword; 
+    // नए पासवर्ड को हैश करना ज़रूरी है
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword; 
     await user.save();
     
     res.json({ message: "Password reset successfully!" });
