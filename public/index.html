@@ -137,15 +137,21 @@
 <div id="authSection" class="auth-container">
   <h2 id="authTitle">BMC Planner Login</h2>
   <div id="authMsg" style="margin-bottom: 10px; text-align: center; min-height: 20px;"></div>
+  
   <form id="authForm" onsubmit="handleAuthSubmit(event)">
     <div class="form-group">
       <label>Username</label>
       <input type="text" id="authUsername" required placeholder="Enter your username">
     </div>
     
-    <div class="form-group" id="pinGroup" style="display: none;">
-      <label>Security PIN (4 Digit)</label>
-      <input type="text" id="authPin" placeholder="Remember this PIN to reset password" maxlength="4">
+    <div class="form-group" id="emailGroup" style="display: none;">
+      <label>Email ID (For Recovery)</label>
+      <input type="email" id="authEmail" placeholder="Enter your email address">
+    </div>
+
+    <div class="form-group" id="otpGroup" style="display: none;">
+      <label>Enter 6-Digit OTP</label>
+      <input type="text" id="authOtp" placeholder="Check your email for OTP" maxlength="6">
     </div>
 
     <div class="form-group" id="passGroup">
@@ -210,6 +216,11 @@
             <label>Follow-up Officer Name (Optional)</label>
             <input type="text" id="officer" list="officerList" autocomplete="off" placeholder="E.g.: Mr. Sharma (EE) / Contractor Name">
             <datalist id="officerList"></datalist>
+          </div>
+
+          <div class="form-group">
+            <label>Officer Email ID (For Auto Alert)</label>
+            <input type="email" id="officerEmail" placeholder="E.g.: officer@gmail.com">
           </div>
 
           <div class="form-group">
@@ -365,7 +376,9 @@
   function setMode(mode) {
     authMode = mode;
     document.getElementById('authMsg').innerHTML = '';
-    const pinGroup = document.getElementById('pinGroup');
+    const emailGroup = document.getElementById('emailGroup');
+    const otpGroup = document.getElementById('otpGroup');
+    const passGroup = document.getElementById('passGroup');
     const passLabel = document.getElementById('passLabel');
     const forgotLinkDiv = document.getElementById('forgotLinkDiv');
     const switchBtn = document.getElementById('switchBtn');
@@ -375,29 +388,44 @@
 
     if (mode === 'login') {
       authTitle.innerText = 'BMC Planner Login';
-      pinGroup.style.display = 'none';
-      passLabel.innerText = 'Password';
+      if(emailGroup) emailGroup.style.display = 'none'; 
+      if(otpGroup) otpGroup.style.display = 'none'; 
+      passGroup.style.display = 'block';
+      passLabel.innerText = 'Password'; 
       forgotLinkDiv.style.display = 'block';
-      switchBtn.style.display = 'block';
+      switchBtn.style.display = 'block'; 
       switchBtn.innerText = 'Need an account? Sign Up';
-      backToLoginBtn.style.display = 'none';
+      backToLoginBtn.style.display = 'none'; 
       authSubmitBtn.innerText = 'Login';
     } else if (mode === 'signup') {
       authTitle.innerText = 'BMC Planner Sign Up';
-      pinGroup.style.display = 'block';
-      passLabel.innerText = 'Create Password';
+      emailGroup.style.display = 'block'; 
+      otpGroup.style.display = 'none'; 
+      passGroup.style.display = 'block';
+      passLabel.innerText = 'Create Password'; 
       forgotLinkDiv.style.display = 'none';
-      switchBtn.style.display = 'block';
+      switchBtn.style.display = 'block'; 
       switchBtn.innerText = 'Already have an account? Login';
-      backToLoginBtn.style.display = 'none';
+      backToLoginBtn.style.display = 'none'; 
       authSubmitBtn.innerText = 'Register';
     } else if (mode === 'forgot') {
-      authTitle.innerText = 'Reset Password';
-      pinGroup.style.display = 'block';
-      passLabel.innerText = 'Create New Password';
-      forgotLinkDiv.style.display = 'none';
+      authTitle.innerText = 'Reset Password (Step 1)';
+      emailGroup.style.display = 'none'; 
+      otpGroup.style.display = 'none'; 
+      passGroup.style.display = 'none';
+      forgotLinkDiv.style.display = 'none'; 
       switchBtn.style.display = 'none';
-      backToLoginBtn.style.display = 'block';
+      backToLoginBtn.style.display = 'block'; 
+      authSubmitBtn.innerText = 'Send OTP';
+    } else if (mode === 'reset') {
+      authTitle.innerText = 'Reset Password (Step 2)';
+      emailGroup.style.display = 'none'; 
+      otpGroup.style.display = 'block'; 
+      passGroup.style.display = 'block';
+      passLabel.innerText = 'Create New Password'; 
+      forgotLinkDiv.style.display = 'none'; 
+      switchBtn.style.display = 'none';
+      backToLoginBtn.style.display = 'block'; 
       authSubmitBtn.innerText = 'Reset Password';
     }
   }
@@ -410,47 +438,45 @@
     e.preventDefault();
     const username = document.getElementById('authUsername').value.trim();
     const password = document.getElementById('authPassword').value.trim(); 
-    const securityPin = document.getElementById('authPin').value.trim();
+    const email = document.getElementById('authEmail') ? document.getElementById('authEmail').value.trim() : '';
+    const otp = document.getElementById('authOtp') ? document.getElementById('authOtp').value.trim() : '';
     const msgBox = document.getElementById('authMsg');
     
-    let endpoint = '';
-    let payload = { username, password };
-
     if (authMode === 'login') {
-      endpoint = '/api/login';
-    } else if (authMode === 'signup') {
-      if(!securityPin) { msgBox.innerHTML = `<span style="color:red; font-size:13px;">Please enter a Security PIN.</span>`; return; }
-      endpoint = '/api/signup';
-      payload.securityPin = securityPin;
-    } else if (authMode === 'forgot') {
-      if(!securityPin) { msgBox.innerHTML = `<span style="color:red; font-size:13px;">Please enter your Security PIN.</span>`; return; }
-      endpoint = '/api/reset-password';
-      payload = { username, securityPin, newPassword: password };
+      if(!username || !password) return msgBox.innerHTML = `<span style="color:red; font-size:13px;">Fill all fields.</span>`;
+      try {
+        const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+        if (res.ok) checkAuthStatus();
+        else { const data = await res.json(); msgBox.innerHTML = `<span style="color:red; font-size:13px;">${data.error}</span>`; }
+      } catch(err) { msgBox.innerHTML = `<span style="color:red; font-size:13px;">Server error.</span>`; }
+    } 
+    else if (authMode === 'signup') {
+      if(!username || !password || !email) return msgBox.innerHTML = `<span style="color:red; font-size:13px;">Fill all fields.</span>`;
+      try {
+        const res = await fetch('/api/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password, email }) });
+        const data = await res.json();
+        if (res.ok) { msgBox.innerHTML = `<span style="color:green; font-size:13px;">${data.message}</span>`; setTimeout(() => setMode('login'), 1500); }
+        else msgBox.innerHTML = `<span style="color:red; font-size:13px;">${data.error}</span>`;
+      } catch(err) { msgBox.innerHTML = `<span style="color:red; font-size:13px;">Server error.</span>`; }
     }
-
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        if (authMode === 'signup') {
-          msgBox.innerHTML = `<span style="color: green; font-size: 13px; font-weight: bold;">Signup successful! Please log in.</span>`;
-          setTimeout(() => { setMode('login'); document.getElementById('authPassword').value = ''; }, 1500);
-        } else if (authMode === 'forgot') {
-          msgBox.innerHTML = `<span style="color: green; font-size: 13px; font-weight: bold;">Password Reset Successful!</span>`;
-          setTimeout(() => { setMode('login'); document.getElementById('authPassword').value = ''; }, 1500);
-        } else {
-          checkAuthStatus();
-        }
-      } else {
-        msgBox.innerHTML = `<span style="color: red; font-size: 13px; font-weight: bold;">${data.error || 'Invalid request'}</span>`;
-      }
-    } catch(err) {
-      msgBox.innerHTML = `<span style="color: red; font-size: 13px; font-weight: bold;">Server connection error.</span>`;
+    else if (authMode === 'forgot') {
+      if(!username) return msgBox.innerHTML = `<span style="color:red; font-size:13px;">Enter Username first.</span>`;
+      msgBox.innerHTML = `<span style="color:blue; font-size:13px;">Sending OTP...</span>`;
+      try {
+        const res = await fetch('/api/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
+        const data = await res.json();
+        if (res.ok) { msgBox.innerHTML = `<span style="color:green; font-size:13px;">${data.message}</span>`; setMode('reset'); }
+        else msgBox.innerHTML = `<span style="color:red; font-size:13px;">${data.error}</span>`;
+      } catch(err) { msgBox.innerHTML = `<span style="color:red; font-size:13px;">Server error.</span>`; }
+    }
+    else if (authMode === 'reset') {
+      if(!username || !otp || !password) return msgBox.innerHTML = `<span style="color:red; font-size:13px;">Fill all fields.</span>`;
+      try {
+        const res = await fetch('/api/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, otp, newPassword: password }) });
+        const data = await res.json();
+        if (res.ok) { msgBox.innerHTML = `<span style="color:green; font-size:13px;">${data.message}</span>`; setTimeout(() => setMode('login'), 2000); }
+        else msgBox.innerHTML = `<span style="color:red; font-size:13px;">${data.error}</span>`;
+      } catch(err) { msgBox.innerHTML = `<span style="color:red; font-size:13px;">Server error.</span>`; }
     }
   }
 
@@ -719,6 +745,24 @@
     
     saveAndRender();
     handleFrequencyOrDateChange(); 
+
+    // ईमेल भेजने के लिए नया कोड
+    const offEmail = document.getElementById('officerEmail').value;
+    if (offEmail && !editingTaskId) {
+      fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          officerEmail: offEmail,
+          taskTitle: document.getElementById('title').value,
+          deadline: document.getElementById('finalDate').value,
+          priority: priorityLevel,
+          details: document.getElementById('details').value
+        })
+      }).then(res => res.json()).then(data => {
+        openCustomDialog({ title: "📧 Email Sent", text: "Officer has been notified via email.", type: "alert", isSuccess: true });
+      }).catch(err => console.error(err));
+    }
   }
 
   function viewTaskDetails(id) {
