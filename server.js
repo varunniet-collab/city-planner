@@ -82,7 +82,7 @@ app.post('/api/forgot-password', async (req, res) => {
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: { user: 'varun.niet@gmail.com', pass: 'nvmy wxib sszy otbw' }
+      auth: { user: 'varun.niet@gmail.com', pass: 'nvmywxibsszyotbw' }
     });
 
     await transporter.sendMail({
