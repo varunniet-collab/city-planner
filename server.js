@@ -4,7 +4,6 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
-const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -69,7 +68,7 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// API: Forgot Password (Send OTP via Brevo SMTP)
+// API: Forgot Password (Send OTP via Brevo HTTP API)
 app.post('/api/forgot-password', async (req, res) => {
   const { username } = req.body;
   try {
@@ -90,21 +89,27 @@ app.post('/api/forgot-password', async (req, res) => {
     user.resetOtp = otp;
     await user.save();
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      auth: {
-        user: 'varun.niet@gmail.com',
-        pass: 'process.env.BREVO_PASS'
-      }
+    // Brevo API Call (Port 443 - Never Blocked)
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_PASS,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { email: 'varun.niet@gmail.com', name: 'BMC Planner' },
+        to: [{ email: user.email }],
+        subject: '🔑 BMC Planner - Password Reset OTP',
+        htmlContent: `<h3>Your Password Reset OTP is: <b style="color:red;">${otp}</b></h3><p>Do not share this with anyone.</p>`
+      })
     });
 
-    await transporter.sendMail({
-      from: 'varun.niet@gmail.com',
-      to: user.email,
-      subject: '🔑 BMC Planner - Password Reset OTP',
-      html: `<h3>Your Password Reset OTP is: <b style="color:red;">${otp}</b></h3><p>Do not share this with anyone.</p>`
-    });
+    if (!response.ok) {
+      const errData = await response.json();
+      console.error("Brevo API Error:", errData);
+      throw new Error("Failed to send via Brevo API");
+    }
 
     console.log(`Success: OTP sent to ${user.email}`);
     res.json({ message: "OTP sent to your registered email!" });
@@ -130,42 +135,47 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-// API: Send Task Email Alert via Brevo SMTP
+// API: Send Task Email Alert via Brevo HTTP API
 app.post('/api/send-email', async (req, res) => {
   const { officerEmail, taskTitle, deadline, priority, details } = req.body;
   if (!officerEmail) return res.status(400).json({ error: "No email provided" });
 
-  const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
-    port: 587,
-    auth: {
-      user: 'varun.niet@gmail.com',
-      pass: 'xsmtpsib-f9e217ac91f8d83c5b9aaf8cd22793f4f7c6d57bdd13854497be937c0d272247-TslNKEYze07keZZP'
-    }
-  });
-
-  const mailOptions = {
-    from: 'varun.niet@gmail.com',
-    to: officerEmail,
-    subject: `🚨 BMC New Task Assigned: ${taskTitle}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px;">
-        <h3 style="color: #1e3a8a; margin-top: 0;">Bhavnagar Municipal Corporation - Task Alert</h3>
-        <p>Sir/Madam,</p>
-        <p>A new task has been assigned to you. Please find the details below:</p>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-          <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: bold;">Task Name</td><td style="padding: 8px; border: 1px solid #cbd5e1;">${taskTitle}</td></tr>
-          <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: bold;">Deadline</td><td style="padding: 8px; border: 1px solid #cbd5e1; color: #dc2626;"><b>${new Date(deadline).toLocaleString('en-IN')}</b></td></tr>
-          <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: bold;">Priority</td><td style="padding: 8px; border: 1px solid #cbd5e1;">${priority}</td></tr>
-          <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: bold;">Remarks</td><td style="padding: 8px; border: 1px solid #cbd5e1;">${details || 'N/A'}</td></tr>
-        </table>
-        <p>Please complete this work on time.</p>
-        <p style="font-size: 11px; color: #64748b;">This is an auto-generated alert from BMC Smart Executive Planner.</p>
-      </div>
-    `
-  };
   try {
-    await transporter.sendMail(mailOptions);
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_PASS,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { email: 'varun.niet@gmail.com', name: 'BMC Planner' },
+        to: [{ email: officerEmail }],
+        subject: `🚨 BMC New Task Assigned: ${taskTitle}`,
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px;">
+            <h3 style="color: #1e3a8a; margin-top: 0;">Bhavnagar Municipal Corporation - Task Alert</h3>
+            <p>Sir/Madam,</p>
+            <p>A new task has been assigned to you. Please find the details below:</p>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+              <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: bold;">Task Name</td><td style="padding: 8px; border: 1px solid #cbd5e1;">${taskTitle}</td></tr>
+              <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: bold;">Deadline</td><td style="padding: 8px; border: 1px solid #cbd5e1; color: #dc2626;"><b>${new Date(deadline).toLocaleString('en-IN')}</b></td></tr>
+              <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: bold;">Priority</td><td style="padding: 8px; border: 1px solid #cbd5e1;">${priority}</td></tr>
+              <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: bold;">Remarks</td><td style="padding: 8px; border: 1px solid #cbd5e1;">${details || 'N/A'}</td></tr>
+            </table>
+            <p>Please complete this work on time.</p>
+            <p style="font-size: 11px; color: #64748b;">This is an auto-generated alert from BMC Smart Executive Planner.</p>
+          </div>
+        `
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      console.error("Brevo API Task Email Error:", errData);
+      throw new Error("Failed to send task email");
+    }
+
     res.json({ message: "Email sent successfully" });
   } catch (error) {
     console.error("🚨 TASK EMAIL ERROR:", error);
