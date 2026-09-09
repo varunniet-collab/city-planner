@@ -641,8 +641,8 @@
     if ("Notification" in window) {
        const p = await Notification.requestPermission();
        if (p === "granted") { 
-         playBeep();
-         await openCustomDialog({ title: "🔔 Notifications On", text: "Desktop & Mobile alerts have been successfully activated.", type: "alert", isSuccess: true });
+        playBeep();
+        await openCustomDialog({ title: "🔔 Notifications On", text: "Desktop & Mobile alerts have been successfully activated.", type: "alert", isSuccess: true });
        }
     }
   }
@@ -707,20 +707,26 @@
     const selectedDepts = Array.from(deptSelect.selectedOptions).map(opt => opt.value).join(', ');
     const officerName = document.getElementById('officer').value;
     const priorityLevel = document.getElementById('priority').value;
+    
+    // फॉर्म रिसेट होने से ठीक पहले ईमेल और टाइटल को सुरक्षित सेव करें
+    const offEmail = document.getElementById('officerEmail').value.trim();
+    const taskTitleVal = document.getElementById('title').value;
+    const deadlineVal = document.getElementById('finalDate').value;
+    const detailsVal = document.getElementById('details').value;
 
     if (editingTaskId) {
       tasks = tasks.map(t => {
         if (t.id === editingTaskId) {
-          t.title = document.getElementById('title').value;
+          t.title = taskTitleVal;
           t.dept = selectedDepts;
           t.officer = officerName;
           t.priority = priorityLevel;
           t.frequency = document.getElementById('frequency').value;
-          t.finalDate = document.getElementById('finalDate').value;
+          t.finalDate = deadlineVal;
           t.alert1 = document.getElementById('alert1').value || null;
           t.alert2 = document.getElementById('alert2').value || null;
           t.alert3 = document.getElementById('alert3').value || null;
-          t.details = document.getElementById('details').value;
+          t.details = detailsVal;
           t.logs.unshift(`${new Date().toLocaleDateString('en-IN')}: Task Details Updated.`);
           t.lastAlertStageTriggered = 0; 
         }
@@ -731,16 +737,16 @@
     } else {
       tasks.push({
         id: Date.now(),
-        title: document.getElementById('title').value,
+        title: taskTitleVal,
         dept: selectedDepts,
         officer: officerName,
         priority: priorityLevel,
         frequency: document.getElementById('frequency').value,
-        finalDate: document.getElementById('finalDate').value,
+        finalDate: deadlineVal,
         alert1: document.getElementById('alert1').value || null,
         alert2: document.getElementById('alert2').value || null,
         alert3: document.getElementById('alert3').value || null,
-        details: document.getElementById('details').value,
+        details: detailsVal,
         progress: 0,
         logs: [`${new Date().toLocaleDateString('en-IN')}: Task created.`],
         snoozedUntil: null, completed: false, lastAlertStageTriggered: 0
@@ -752,22 +758,23 @@
     saveAndRender();
     handleFrequencyOrDateChange(); 
 
-    // ईमेल भेजने के लिए नया कोड
-    const offEmail = document.getElementById('officerEmail').value;
+    // सुरक्षित तरीके से ईमेल भेजने का फेच कॉल
     if (offEmail && !editingTaskId) {
+      console.log("Sending task email to:", offEmail);
       fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           officerEmail: offEmail,
-          taskTitle: document.getElementById('title').value,
-          deadline: document.getElementById('finalDate').value,
+          taskTitle: taskTitleVal,
+          deadline: deadlineVal,
           priority: priorityLevel,
-          details: document.getElementById('details').value
+          details: detailsVal
         })
       }).then(res => res.json()).then(data => {
+        console.log("Email API Response:", data);
         openCustomDialog({ title: "📧 Email Sent", text: "Officer has been notified via email.", type: "alert", isSuccess: true });
-      }).catch(err => console.error(err));
+      }).catch(err => console.error("Email send error:", err));
     }
   }
 
